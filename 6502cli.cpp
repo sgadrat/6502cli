@@ -24,7 +24,7 @@ uint8_t read_memory(uint16_t addr) {
 
 void show_cpu(mos6502 const &emu) {
 	std::cout
-		<< "  A=" << uint16_t(emu.A) << " X=" << uint16_t(emu.X) << " Y=" << uint16_t(emu.Y) << '\n'
+		<< "A=" << uint16_t(emu.A) << " X=" << uint16_t(emu.X) << " Y=" << uint16_t(emu.Y) << '\n'
 	;
 }
 
@@ -37,6 +37,8 @@ int main() {
 	// Run lines
 	while (true) {
 		// Fetch line from stdin
+		std::cout << ">>> ";
+
 		std::string line;
 		std::getline(std::cin, line);
 		{
