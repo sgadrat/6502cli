@@ -881,20 +881,23 @@ void mos6502::Run(
 	uint8_t opcode;
 	Instr instr;
 
-	while(cyclesRemaining > 0 && !illegalOpcode)
-	{
-		// fetch
-		opcode = Read(pc++);
+	try {
+		while(cyclesRemaining > 0 && !illegalOpcode)
+		{
+			// fetch
+			opcode = Read(pc++);
 
-		// decode
-		instr = InstrTable[opcode];
+			// decode
+			instr = InstrTable[opcode];
 
-		// execute
-		Exec(instr);
-		cycleCount += instr.cycles;
-		cyclesRemaining -=
-			cycleMethod == CYCLE_COUNT        ? instr.cycles
-			/* cycleMethod == INST_COUNT */   : 1;
+			// execute
+			Exec(instr);
+			cycleCount += instr.cycles;
+			cyclesRemaining -=
+				cycleMethod == CYCLE_COUNT        ? instr.cycles
+				/* cycleMethod == INST_COUNT */   : 1;
+		}
+	}catch(Break const&) {
 	}
 }
 

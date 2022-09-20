@@ -41,7 +41,7 @@ using namespace std;
 
 class mos6502
 {
-private:
+public:
 	// registers
 	uint8_t A; // accumulator
 	uint8_t X; // X-index
@@ -176,6 +176,8 @@ private:
 	inline uint8_t StackPop();
 
 public:
+	class Break {
+	};
 	enum CycleMethod {
 		INST_COUNT,
 		CYCLE_COUNT,
