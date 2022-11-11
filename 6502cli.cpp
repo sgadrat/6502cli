@@ -5,9 +5,11 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <readline/readline.h>
+#include <readline/history.h>
 #include <string>
 
-// g++ 6502cli.cpp mos6502.cpp -o 6502cli
+// g++ 6502cli.cpp mos6502.cpp -lreadline -o 6502cli
 
 std::array<uint8_t, 0x10000> memory;
 
@@ -37,16 +39,19 @@ int main() {
 	// Run lines
 	while (true) {
 		// Fetch line from stdin
-		std::cout << ">>> ";
+		char* line = readline(">>> ");
+		if (!line) {
+			std::cout << '\n';
+			break;
+		}
+		add_history(line);
 
-		std::string line;
-		std::getline(std::cin, line);
+		// Assemble the line
 		{
 			std::ofstream ofs("/tmp/6502cli.tmp.asm");
 			ofs << line << '\n';
+			free(line);
 		}
-
-		// Assemble the line
 		int ret = ::system("xa /tmp/6502cli.tmp.asm -o /tmp/6502cli.tmp.compiled");
 		if (WIFSIGNALED(ret) && (WTERMSIG(ret) == SIGINT || WTERMSIG(ret) == SIGQUIT)) {
 			break;
