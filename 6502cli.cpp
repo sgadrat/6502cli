@@ -7,6 +7,7 @@
 #include <iostream>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <sstream>
 #include <string>
 
 // g++ 6502cli.cpp mos6502.cpp -lreadline -o 6502cli
@@ -30,21 +31,50 @@ void show_cpu(mos6502 const &emu) {
 	;
 }
 
+static bool handle_assembly(std::string const& line, mos6502& emu);
+
 static bool handle_pseudo_opcode(std::string const& line, mos6502& emu) {
-	if (line == "%cpu") {
+	std::istringstream line_reader(line);
+	std::string opcode;
+	line_reader >> opcode;
+
+	if (opcode == "%cpu") {
 		show_cpu(emu);
+	}else if (opcode == "%asm") {
+		// Parse arguments
+		std::string source_path;
+		line_reader >> source_path;
+
+		// Read file
+		std::ifstream source_reader(source_path);
+		if (source_reader.fail()) {
+			std::cerr << "ERROR: failed to open '" << source_path << "'\n";
+			return true;
+		}
+		source_reader.seekg(0, std::ios_base::end);
+		auto const source_size = source_reader.tellg();
+		source_reader.seekg(0);
+
+		std::string source(source_size, '\0');
+		source_reader.read(source.data(), source_size);
+
+		// Display source
+		std::cout << source << '\n';
+
+		// Interprete source
+		handle_assembly(source, emu);
 	}else {
-		std::cerr << "unknown pseudo opcode " << line << '\n';
+		std::cerr << "unknown pseudo opcode '" << opcode << "'\n";
 	}
 
 	return true;
 }
 
-static bool handle_assembly(std::string const& line, mos6502& emu) {
-	// Assemble the line
+static bool handle_assembly(std::string const& source, mos6502& emu) {
+	// Assemble the source code
 	{
 		std::ofstream ofs("/tmp/6502cli.tmp.asm");
-		ofs << line << '\n';
+		ofs << source << '\n';
 	}
 	int ret = ::system("xa /tmp/6502cli.tmp.asm -o /tmp/6502cli.tmp.compiled");
 	if (WIFSIGNALED(ret) && (WTERMSIG(ret) == SIGINT || WTERMSIG(ret) == SIGQUIT)) {
