@@ -26,8 +26,14 @@ uint8_t read_memory(uint16_t addr) {
 }
 
 void show_cpu(mos6502 const &emu) {
+	auto s = [&](uint8_t mask) {
+		return (emu.status & mask) != 0;
+	};
+
 	std::cout
 		<< "A=" << uint16_t(emu.A) << " X=" << uint16_t(emu.X) << " Y=" << uint16_t(emu.Y) << '\n'
+		<< "SP=" << uint16_t(emu.sp) << " PC=" << emu.pc << '\n'
+		<< "C=" << uint16_t(s(CARRY)) << " Z=" << uint16_t(s(ZERO)) << " I=" << uint16_t(s(INTERRUPT)) << " D=" << uint16_t(s(DECIMAL)) << " B=" << uint16_t(s(BREAK)) << " V=" << uint16_t(s(OVERFLOW)) << " N=" << uint16_t(s(NEGATIVE)) << '\n'
 	;
 }
 
