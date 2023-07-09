@@ -4,6 +4,8 @@
 #include <csignal>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
+#include <ios>
 #include <iostream>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -46,6 +48,18 @@ static bool handle_pseudo_opcode(std::string const& line, mos6502& emu) {
 
 	if (opcode == "%cpu") {
 		show_cpu(emu);
+	}else if (opcode == "%mem") {
+		// Parse arguments
+		size_t offset;
+		size_t length;
+		line_reader >> offset >> length;
+		std::ostringstream out;
+		out << std::hex << std::setfill('0') << std::setw(2);
+		for (size_t i = offset; i < offset + length; ++i) {
+			out << uint16_t(memory[i]);
+			if (i < offset + length - 1) out << ' ';
+		}
+		std::cout << out.str() << '\n';
 	}else if (opcode == "%asm") {
 		// Parse arguments
 		std::string source_path;
