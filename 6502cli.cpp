@@ -101,7 +101,7 @@ static bool handle_assembly(std::string const& source, mos6502& emu) {
 		return false;
 	}
 
-	size_t const max_compiled_size = 100;
+	size_t const max_compiled_size = 4096; // Start your scripts with: * = $f000
 	std::array<char, max_compiled_size> compiled = {char(0xea)}; // 0xea == NOP
 
 	std::ifstream compiled_reader("/tmp/6502cli.tmp.compiled");
