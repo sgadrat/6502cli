@@ -2,11 +2,13 @@
 
 #include <array>
 #include <csignal>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <ios>
 #include <iostream>
+#include <map>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <sstream>
@@ -15,6 +17,10 @@
 // g++ 6502cli.cpp mos6502.cpp -lreadline -o 6502cli
 
 std::array<uint8_t, 0x10000> memory;
+std::map<std::string, std::string> options = {
+	{"show-code-stats", "false"},
+	{"xa-bin", "xa"},
+};
 
 void write_memory(uint16_t addr, uint8_t value) {
 	memory[addr] = value;
@@ -109,6 +115,24 @@ static bool handle_pseudo_opcode(std::string const& line, mos6502& emu) {
 
 		// Interprete source
 		handle_assembly(source, emu);
+	}else if (opcode == "%options") {
+		for (auto const& kv: options) {
+			std::cout << kv.first << ": " << kv.second << '\n';
+		}
+	}else if (opcode == "%set") {
+		// Parse arguments
+		std::string option;
+		std::string value;
+		line_reader >> option >> value;
+
+		// Check consistency
+		if (options.find(option) == options.end()) {
+			std::cerr << "unknown option '" << option << "'\n";
+			return true;
+		}
+
+		// Set option
+		options.at(option) = value;
 	}else {
 		std::cerr << "unknown pseudo opcode '" << opcode << "'\n";
 	}
@@ -122,7 +146,7 @@ static bool handle_assembly(std::string const& source, mos6502& emu) {
 		std::ofstream ofs("/tmp/6502cli.tmp.asm");
 		ofs << source << '\n';
 	}
-	int ret = ::system("xa /tmp/6502cli.tmp.asm -o /tmp/6502cli.tmp.compiled");
+	int ret = ::system((options["xa-bin"] + " /tmp/6502cli.tmp.asm -o /tmp/6502cli.tmp.compiled").c_str());
 	if (WIFSIGNALED(ret) && (WTERMSIG(ret) == SIGINT || WTERMSIG(ret) == SIGQUIT)) {
 		return false;
 	}
@@ -155,8 +179,10 @@ static bool handle_assembly(std::string const& source, mos6502& emu) {
 	emu.Run(max_cycles, cycles_count, mos6502::CYCLE_COUNT);
 
 	// Display info about compiled code
-	std::cout << "compiled code size: " << compiled_size << " bytes\n";
-	std::cout << "execution (approximate): " << cycles_count << " cycles\n";
+	if (options["show-code-stats"] != "false") {
+		std::cout << "compiled code size: " << compiled_size << " bytes\n";
+		std::cout << "execution (approximate): " << cycles_count << " cycles\n";
+	}
 
 	return true;
 }
@@ -174,12 +200,20 @@ int main(int argc, char** argv) {
 			<< " %asm <file>: execute a file\n"
 			<< " %cpu: display CPU state\n"
 			<< " %mem <offset> <length>: display memory region\n"
+			<< " %options: display configuration options and their values\n"
+			<< " %set <option> <value>: modify a configuration option\n"
 			<< '\n'
 			<< "Code is compiled, copied at address $f000, then executed.\n"
 			<< "Read $ffff to stop execution\n"
 			<< " (often happens automatically $fxxx is filled with NOPs after your code.)\n"
 		;
 		return 1;
+	}
+
+	// Check environment
+	char* xa_bin = ::getenv("XA_BIN");
+	if (xa_bin != NULL) {
+		options.at("xa-bin") = xa_bin;
 	}
 
 	// Init emulator
