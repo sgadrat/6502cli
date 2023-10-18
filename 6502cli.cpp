@@ -119,7 +119,27 @@ static bool handle_assembly(std::string const& source, mos6502& emu) {
 	return true;
 }
 
-int main() {
+int main(int argc, char** argv) {
+	// Parse command line
+	if (argc != 1) {
+		std::cerr
+			<< "usage: " << argv[0] << '\n'
+			<< '\n'
+			<< "Interactive 6502 executor.\n"
+			<< '\n'
+			<< "In session, type assembly for it to be executed\n"
+			<< "or pseudo opcodes to command the executor:\n"
+			<< " %asm <file>: execute a file\n"
+			<< " %cpu: display CPU state\n"
+			<< " %mem <offset> <length>: display memory region\n"
+			<< '\n'
+			<< "Code is compiled, copied at address $f000, then executed.\n"
+			<< "Read $ffff to stop execution\n"
+			<< " (often happens automatically $fxxx is filled with NOPs after your code.)\n"
+		;
+		return 1;
+	}
+
 	// Init emulator
 	memory.fill(0);
 	mos6502 emu(&read_memory, &write_memory);
