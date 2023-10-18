@@ -130,7 +130,19 @@ static bool handle_assembly(std::string const& source, mos6502& emu) {
 	size_t const max_compiled_size = 4096; // Start your scripts with: * = $f000
 	std::array<char, max_compiled_size> compiled = {char(0xea)}; // 0xea == NOP
 
-	std::ifstream compiled_reader("/tmp/6502cli.tmp.compiled");
+	std::string const compiled_path("/tmp/6502cli.tmp.compiled");
+	std::ifstream compiled_reader(compiled_path);
+	if (compiled_reader.fail()) {
+		std::cerr << "ERROR: failed to open '" << compiled_path << "'\n";
+		return false;
+	}
+	compiled_reader.seekg(0, std::ios_base::end);
+	auto const compiled_size = compiled_reader.tellg();
+	compiled_reader.seekg(0);
+	if (compiled_size > max_compiled_size) {
+		std::cerr << "ERROR: compiled code too large: " << compiled_size << " bytes\n";
+		return true;
+	}
 	compiled_reader.read(compiled.data(), max_compiled_size);
 
 	// Run emulator on assembled code
@@ -141,6 +153,10 @@ static bool handle_assembly(std::string const& source, mos6502& emu) {
 	uint64_t cycles_count = 0;
 	emu.pc = compiled_code_offset;
 	emu.Run(max_cycles, cycles_count, mos6502::CYCLE_COUNT);
+
+	// Display info about compiled code
+	std::cout << "compiled code size: " << compiled_size << " bytes\n";
+	std::cout << "execution (approximate): " << cycles_count << " cycles\n";
 
 	return true;
 }
