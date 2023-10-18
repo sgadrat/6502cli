@@ -27,6 +27,20 @@ uint8_t read_memory(uint16_t addr) {
 	return memory[addr];
 }
 
+size_t asm_uint(std::string const& s) {
+	if (s.empty()) {
+		return 0;
+	}
+	switch (s[0]) {
+		case '$':
+			return std::stoll(s.substr(1), nullptr, 16);
+		case '%':
+			return std::stoll(s.substr(1), nullptr, 2);
+		default:
+			return std::stoll(s);
+	};
+}
+
 void show_cpu(mos6502 const &emu) {
 	auto s = [&](uint8_t mask) {
 		return (emu.status & mask) != 0;
@@ -50,14 +64,26 @@ static bool handle_pseudo_opcode(std::string const& line, mos6502& emu) {
 		show_cpu(emu);
 	}else if (opcode == "%mem") {
 		// Parse arguments
-		size_t offset;
-		size_t length;
-		line_reader >> offset >> length;
+		std::string str_offset;
+		std::string str_length;
+		line_reader >> str_offset >> str_length;
+		size_t offset = asm_uint(str_offset);
+		size_t length = asm_uint(str_length);
 		std::ostringstream out;
-		out << std::hex << std::setfill('0') << std::setw(2);
+		uint8_t byte_counter = 0;
 		for (size_t i = offset; i < offset + length; ++i) {
-			out << uint16_t(memory[i]);
-			if (i < offset + length - 1) out << ' ';
+			out << std::hex << std::setfill('0') << std::setw(2) << uint16_t(memory[i]);
+			++byte_counter;
+			if (i < offset + length - 1) {
+				if (byte_counter == 8) {
+					out << "  ";
+				}else if (byte_counter == 16) {
+					out << '\n';
+					byte_counter = 0;
+				}else {
+					out << ' ';
+				}
+			}
 		}
 		std::cout << out.str() << '\n';
 	}else if (opcode == "%asm") {
